@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .dragAndDropArea {
+        width: 500px;
+        height: 400px;
+        background: rgba(134, 134, 134, 0.59);
+        text-align: center;
+        float: left;
+      }
+      .filesStatus {
+        width: 500px;
+        height: 400px;
+        float: left;
+      }
+      .uploading {
+        display: flex;
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        const dropArea = document.getElementById("dropArea");
+
+        dropArea.addEventListener("dragover", (event) => {
+          event.stopPropagation();
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "copy";
+        });
+
+        dropArea.addEventListener("drop", (event) => {
+          event.stopPropagation();
+          event.preventDefault();
+          const fileList = event.dataTransfer.files;
+          let timeStampMapping = [];
+          for (let i = 0; i < fileList.length; i++) {
+            let token = guid();
+            timeStampMapping[fileList[i].name] = token;
+            addFileStatus(fileList[i].name, token);
+          }
+          for (let i = 0; i < fileList.length; i++) {
+            var data = new FormData();
+            data.append("file", fileList[i]);
+            data.append("token", `${timeStampMapping[fileList[i].name]}`);
+            fetch("https://localhost:5001/File/Upload", {
+              method: "POST",
+              body: data,
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                $(`#${data.TimeStamp}`).attr("src", "images/check.png");
+                console.log(data);
+              });
+          }
+          console.log(fileList);
+        });
+      });
+      function addFileStatus(fileName, timeStamp) {
+        $(".filesStatus").append(
+          `<div class="uploading"><img id="${timeStamp}" src="images/rocket_40.gif"/><div>${fileName}</div></div>`
+        );
+      }
+      let guid = () => {
+        let s4 = () => {
+          return Math.floor((1 + Math.random()) * 0x10000)
+            .toString(16)
+            .substring(1);
+        };
+        return s4() + s4() + s4() + s4() + s4() + s4() + s4() + s4();
+      };
+    </script>
+  </head>
+  <body>
+    <div class="dragAndDropArea" id="dropArea">Drag And Drop Files Here</div>
+    <div class="filesStatus"></div>
+  </body>
+</html>
